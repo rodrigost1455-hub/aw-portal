@@ -184,11 +184,11 @@ async def save_report(client_id: int, request: Request, db: Session = Depends(ge
     form = await request.form()
     client = db.query(models.Client).filter(models.Client.id == client_id).first()
 
-    inflow = float(form.get("inflow", 0))
-    outflow = float(form.get("outflow", 0))
+    inflow = float(form.get("inflow") or 0)
+    outflow = float(form.get("outflow") or 0)
     excess = inflow - outflow
 
-    private_reserve_balance = float(form.get("private_reserve_balance", 0))
+    private_reserve_balance = float(form.get("private_reserve_balance") or 0)
     quarter = int(form.get("quarter", 1))
     year = int(form.get("year", datetime.datetime.utcnow().year))
 
