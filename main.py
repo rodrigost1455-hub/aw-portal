@@ -1,10 +1,9 @@
 from fastapi import FastAPI, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import Optional
-import io
 import datetime
 import os
 
@@ -260,32 +259,16 @@ async def save_report(client_id: int, request: Request, db: Session = Depends(ge
     return RedirectResponse(url="/", status_code=303)
 
 
-@app.get("/clients/{client_id}/report/{report_id}/sacs-pdf")
-def generate_sacs_pdf(client_id: int, report_id: int, db: Session = Depends(get_db)):
-    from xhtml2pdf import pisa
-
+@app.get("/clients/{client_id}/report/{report_id}/sacs-pdf", response_class=HTMLResponse)
+def generate_sacs_pdf(client_id: int, report_id: int, request: Request, db: Session = Depends(get_db)):
     client = db.query(models.Client).filter(models.Client.id == client_id).first()
     report = db.query(models.QuarterlyReport).filter(models.QuarterlyReport.id == report_id).first()
-
-    html_content = templates.get_template("sacs_pdf.html").render({
+    return templates.TemplateResponse(request=request, name="sacs_pdf.html", context={
         "client": client,
         "report": report,
         "fmt": fmt,
         "quarter_label": f"Q{report.quarter} {report.year}",
     })
-
-    pdf_buffer = io.BytesIO()
-    pisa.CreatePDF(html_content, dest=pdf_buffer)
-    pdf_buffer.seek(0)
-
-    client_slug = client.full_name.replace(" ", "_")
-    filename = f"SACS_{client_slug}_Q{report.quarter}_{report.year}.pdf"
-
-    return StreamingResponse(
-        pdf_buffer,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
 
 
 # Convenience: generate PDF from latest report

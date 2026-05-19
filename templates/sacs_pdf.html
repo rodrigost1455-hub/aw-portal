@@ -284,7 +284,46 @@
       color: #1B4F8A;
     }
 
-    /* ── Footer ─────────────────────────────────────────── */
+    /* ── Print button ───────────────────────────────────── */
+  .print-toolbar {
+    position: fixed;
+    top: 12px;
+    right: 16px;
+    display: flex;
+    gap: 8px;
+    z-index: 999;
+  }
+  .btn-print {
+    background: #1B4F8A;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-back {
+    background: #fff;
+    color: #1B4F8A;
+    border: 1.5px solid #1B4F8A;
+    border-radius: 6px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: none;
+    display: inline-block;
+    line-height: 1.4;
+  }
+  @media print {
+    .print-toolbar { display: none; }
+    @page { size: A4 landscape; margin: 0; }
+  }
+
+  /* ── Footer ─────────────────────────────────────────── */
     .footer-bar {
       background-color: #1B4F8A;
       width: 100%;
@@ -314,6 +353,12 @@
   </style>
 </head>
 <body>
+
+<!-- ── Print toolbar ───────────────────────────────────────── -->
+<div class="print-toolbar">
+  <a class="btn-back" href="javascript:history.back()">← Back</a>
+  <button class="btn-print" onclick="window.print()">Print / Save PDF</button>
+</div>
 
 <!-- ── Header ──────────────────────────────────────────────── -->
 <table class="header-table" cellpadding="0" cellspacing="0">
