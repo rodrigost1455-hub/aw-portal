@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280">
+  <title>{% if client %}Edit Client{% else %}New Client{% endif %} — AW Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="/" class="topbar-logo">AW</a>
+    <a href="/" class="topbar-title">AW Client Report Portal</a>
+  </div>
+  <div class="topbar-user">
+    <span style="color:rgba(255,255,255,0.75);">Windbrook Solutions</span>
+    <div class="topbar-divider"></div>
+    <span>Sarah Mitchell</span>
+    <div class="topbar-user-avatar">SM</div>
+  </div>
+</nav>
+
+<div class="page">
+
+  <div class="crumbs">
+    <a href="/">Clients</a>
+    <span class="sep">›</span>
+    <span>{% if client %}Edit Client{% else %}New Client{% endif %}</span>
+  </div>
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">{% if client %}Edit Client{% else %}New Client{% endif %}</h1>
+      <div class="page-subtitle">Set up a household, financial profile, and accounts. Required for quarterly reports.</div>
+    </div>
+  </div>
+
+  <form action="/clients" method="POST">
+
+    <div class="two-col">
+
+      <!-- ── LEFT: Client Info ────────────────────────────── -->
+      <div class="card">
+
+        <!-- Client Information -->
+        <div class="form-section">
+          <h2 class="section-header">Client Information</h2>
+
+          <h3 class="subsection-header">Primary Client</h3>
+          <div class="form-grid">
+            <div class="form-row full">
+              <label class="field-label">Full Name</label>
+              <input type="text" class="input" name="full_name" required placeholder="First Last"
+                value="{{ client.full_name if client else '' }}">
+            </div>
+            <div class="form-row">
+              <label class="field-label">Date of Birth</label>
+              <input type="date" class="input" name="dob" required
+                value="{{ client.dob if client else '' }}">
+            </div>
+            <div class="form-row">
+              <label class="field-label">SSN · last 4</label>
+              <input type="text" class="input" name="ssn_last4" maxlength="4"
+                pattern="\d{4}" required placeholder="0000"
+                value="{{ client.ssn_last4 if client else '' }}">
+            </div>
+          </div>
+
+          <!-- Spouse toggle -->
+          <div class="toggle-row">
+            <span class="toggle-label">Add Spouse / Co-client</span>
+            <button type="button" class="toggle-btn" id="spouse-toggle"
+              data-on="{{ '1' if client and client.spouse_name else '0' }}"></button>
+          </div>
+
+          <div id="spouse-section">
+            <h3 class="subsection-header">Spouse</h3>
+            <div class="form-grid">
+              <div class="form-row full">
+                <label class="field-label">Full Name</label>
+                <input type="text" class="input" name="spouse_name" placeholder="First Last"
+                  value="{{ client.spouse_name if client and client.spouse_name else '' }}">
+              </div>
+              <div class="form-row">
+                <label class="field-label">Date of Birth</label>
+                <input type="date" class="input" name="spouse_dob"
+                  value="{{ client.spouse_dob if client and client.spouse_dob else '' }}">
+              </div>
+              <div class="form-row">
+                <label class="field-label">SSN · last 4</label>
+                <input type="text" class="input" name="spouse_ssn_last4" maxlength="4"
+                  pattern="\d{0,4}" placeholder="0000"
+                  value="{{ client.spouse_ssn_last4 if client and client.spouse_ssn_last4 else '' }}">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Financial Profile -->
+        <div class="form-section">
+          <h2 class="section-header">Financial Profile</h2>
+          <div class="form-grid">
+            <div class="form-row">
+              <label class="field-label">Monthly Salary (after tax)</label>
+              <div class="input-with-prefix">
+                <span class="prefix">$</span>
+                <input type="number" class="input" name="monthly_salary" id="monthly_salary"
+                  min="0" step="100" required placeholder="0"
+                  value="{{ client.monthly_salary|int if client else '' }}">
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="field-label">Monthly Expense Budget</label>
+              <div class="input-with-prefix">
+                <span class="prefix">$</span>
+                <input type="number" class="input" name="monthly_expense_budget" id="monthly_expense_budget"
+                  min="0" step="100" required placeholder="0"
+                  value="{{ client.monthly_expense_budget|int if client else '' }}">
+              </div>
+            </div>
+            <div class="form-row full">
+              <label class="field-label">
+                Private Reserve Target
+                <span class="auto-calc-tag">
+                  <svg style="width:9px;height:9px;vertical-align:-1px" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M5 5h6M5.5 8.5h1M8 8.5h1M10.5 8.5h0M5.5 11h1M8 11h1M10.5 11h0"/></svg>
+                  Auto-calculated
+                </span>
+              </label>
+              <div class="input-with-prefix">
+                <span class="prefix">$</span>
+                <input type="text" class="input readonly" id="private_reserve_target_display"
+                  readonly placeholder="0"
+                  value="{{ '{:,.0f}'.format(client.private_reserve_target) if client else '0' }}">
+              </div>
+              <div class="hint">6 × Monthly Expense Budget</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /LEFT -->
+
+      <!-- ── RIGHT: Accounts ──────────────────────────────── -->
+      <div class="card">
+        <div class="form-section">
+          <h2 class="section-header">
+            Accounts
+            <button type="button" id="add-account-btn" class="btn btn-outline btn-sm">
+              <svg class="ico-sm" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+              Add Account
+            </button>
+          </h2>
+
+          <div id="accounts-empty" class="account-empty"
+            style="{{ 'display:none' if client and client.accounts else '' }}">
+            No accounts yet. Click <strong>+ Add Account</strong> to start.
+          </div>
+
+          <div class="account-list" id="accounts-container">
+            {% if client %}
+            {% for acct in client.accounts %}
+            <div class="account-row" data-idx="{{ loop.index0 }}">
+              <div class="account-row-top">
+                <div class="form-row">
+                  <label class="field-label">Owner</label>
+                  <select class="select" name="acct_owner[]">
+                    <option value="client1" {{ 'selected' if acct.owner=='client1' }}>Client 1</option>
+                    <option value="client2" {{ 'selected' if acct.owner=='client2' }}>Client 2</option>
+                    <option value="joint"   {{ 'selected' if acct.owner=='joint' }}>Joint</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label class="field-label">Type</label>
+                  <select class="select acct-type-sel" name="acct_type[]">
+                    {% for t in ['IRA','RothIRA','401K','brokerage','trust','liability'] %}
+                    <option value="{{ t }}" {{ 'selected' if acct.type==t }}>{{ t }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label class="field-label">Account · last 4</label>
+                  <input type="text" class="input" name="acct_last4[]" maxlength="4"
+                    placeholder="1234" value="{{ acct.account_last4 or '' }}">
+                </div>
+                <div class="form-row" style="align-items:center;margin-bottom:2px;">
+                  <button type="button" class="btn-icon remove-acct-btn" title="Remove account">
+                    <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h10M6.5 4V2.5h3V4M4.5 4l.6 9a1 1 0 0 0 1 1h3.8a1 1 0 0 0 1-1l.6-9M6.5 7v4M9.5 7v4"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="account-row-bottom">
+                <div class="checkbox-row">
+                  <label class="checkbox-item">
+                    <input type="checkbox" name="acct_retirement[]" value="{{ loop.index0 }}" class="flag-ret" {{ 'checked' if acct.is_retirement }}>
+                    <span class="checkbox-box">{{ '✓' if acct.is_retirement else '' }}</span> Retirement
+                  </label>
+                  <label class="checkbox-item">
+                    <input type="checkbox" name="acct_trust[]" value="{{ loop.index0 }}" class="flag-trust" {{ 'checked' if acct.is_trust }}>
+                    <span class="checkbox-box">{{ '✓' if acct.is_trust else '' }}</span> Trust
+                  </label>
+                  <label class="checkbox-item">
+                    <input type="checkbox" name="acct_liability[]" value="{{ loop.index0 }}" class="flag-liab" {{ 'checked' if acct.is_liability }}>
+                    <span class="checkbox-box">{{ '✓' if acct.is_liability else '' }}</span> Liability
+                  </label>
+                </div>
+                <div class="rate-field" style="{{ '' if acct.is_liability else 'display:none;' }}">
+                  <label class="field-label" style="white-space:nowrap;">Interest Rate</label>
+                  <div class="input-with-suffix" style="width:100px;">
+                    <input type="text" class="input" name="acct_rate[]"
+                      placeholder="0.00" value="{{ acct.interest_rate or '' }}">
+                    <span class="suffix">%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+          </div>
+
+          <div class="info-note" style="margin-top:16px;">
+            <svg class="ico-sm" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="7" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+            Account numbers are encrypted; only the last 4 are stored in plain text.
+          </div>
+        </div>
+      </div><!-- /RIGHT -->
+
+    </div><!-- /two-col -->
+
+    <!-- Footer -->
+    <div class="card" style="margin-top:16px;">
+      <div class="form-footer">
+        <a href="/" class="btn-link">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+          <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2h8l2 2v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M5 2v4h5V2M5 10h6"/></svg>
+          {% if client %}Save Changes{% else %}Save Client{% endif %}
+        </button>
+      </div>
+    </div>
+
+  </form>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

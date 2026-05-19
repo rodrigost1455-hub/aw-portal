@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.pyo
+*.db
+.env
+design_bundle/
+design_extracted.html
+.DS_Store

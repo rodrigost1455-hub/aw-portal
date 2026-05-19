@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: aw-client-portal
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+    # SQLite lives in the project dir — data persists within a running instance.
+    # For a truly persistent DB, upgrade to Render PostgreSQL and swap DATABASE_URL.

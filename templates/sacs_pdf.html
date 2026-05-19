@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SACS Report — {{ client.full_name }}</title>
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 11pt;
+      color: #1A1A2E;
+      background: #ffffff;
+    }
+
+    /* ── Header ──────────────────────────────────────────── */
+    .header-table {
+      width: 100%;
+      background-color: #1B4F8A;
+      padding: 0;
+    }
+    .header-table td {
+      padding: 20px 36px;
+      vertical-align: middle;
+      color: #ffffff;
+    }
+    .header-title {
+      font-size: 20pt;
+      font-weight: bold;
+      line-height: 1.2;
+      color: #ffffff;
+    }
+    .header-subtitle {
+      font-size: 9pt;
+      color: rgba(255,255,255,0.75);
+      margin-top: 4px;
+    }
+    .header-client {
+      font-size: 15pt;
+      font-weight: bold;
+      color: #ffffff;
+      text-align: right;
+    }
+    .header-meta {
+      font-size: 9pt;
+      color: rgba(255,255,255,0.8);
+      text-align: right;
+      margin-top: 3px;
+    }
+    .confidential {
+      display: inline-block;
+      border: 1px solid rgba(255,255,255,0.5);
+      background-color: rgba(255,255,255,0.12);
+      color: #ffffff;
+      font-size: 7pt;
+      font-weight: bold;
+      letter-spacing: 1.5px;
+      padding: 2px 8px;
+      margin-top: 6px;
+    }
+
+    /* ── Body ────────────────────────────────────────────── */
+    .body-wrap {
+      padding: 24px 36px;
+    }
+
+    .section-label {
+      font-size: 7.5pt;
+      font-weight: bold;
+      color: #1B4F8A;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      border-bottom: 1.5px solid #D0D7E2;
+      padding-bottom: 4px;
+      margin-bottom: 14px;
+      margin-top: 18px;
+    }
+
+    /* ── SACS Flow: table-based circles ─────────────────── */
+    .flow-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .flow-table td {
+      vertical-align: middle;
+      text-align: center;
+      padding: 0;
+    }
+
+    .circle-cell {
+      width: 160px;
+    }
+    .circle-box {
+      width: 148px;
+      height: 148px;
+      border-radius: 74px;
+      border-width: 5px;
+      border-style: solid;
+      padding: 20px 10px;
+      text-align: center;
+      display: inline-block;
+    }
+    .circle-inflow  { border-color: #2E7D32; }
+    .circle-outflow { border-color: #C62828; }
+
+    .circ-label {
+      font-size: 8pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+    .circ-inflow-label  { color: #2E7D32; }
+    .circ-outflow-label { color: #C62828; }
+
+    .circ-amount {
+      font-size: 17pt;
+      font-weight: bold;
+      line-height: 1.1;
+    }
+    .circ-inflow-amt  { color: #2E7D32; }
+    .circ-outflow-amt { color: #C62828; }
+
+    .circ-sub {
+      font-size: 7.5pt;
+      color: #666;
+      margin-top: 5px;
+      line-height: 1.3;
+    }
+
+    /* Arrow cell */
+    .arrow-cell {
+      width: 80px;
+      text-align: center;
+    }
+    .arrow-label-text {
+      font-size: 7pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: #888;
+    }
+    .arrow-amount-text {
+      font-size: 8pt;
+      font-weight: bold;
+      margin-top: 2px;
+    }
+    .arrow-line-red {
+      height: 3px;
+      background-color: #C62828;
+      margin: 3px auto;
+      width: 60px;
+    }
+    .arrow-line-blue {
+      height: 3px;
+      background-color: #1B4F8A;
+      margin: 3px auto;
+      width: 60px;
+    }
+    .color-green { color: #2E7D32; }
+    .color-red   { color: #C62828; }
+    .color-blue  { color: #1B4F8A; }
+
+    /* Reserve box */
+    .reserve-cell {
+      width: 200px;
+    }
+    .reserve-box {
+      background-color: #1B4F8A;
+      border-radius: 10px;
+      padding: 16px 14px;
+      text-align: center;
+      display: inline-block;
+      width: 190px;
+    }
+    .res-label {
+      font-size: 7.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 6px;
+    }
+    .res-balance {
+      font-size: 21pt;
+      font-weight: bold;
+      color: #ffffff;
+      line-height: 1;
+    }
+    .res-sub {
+      font-size: 7.5pt;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .res-target {
+      font-size: 9pt;
+      color: rgba(255,255,255,0.85);
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.3);
+    }
+    .res-target b { color: #ffffff; }
+
+    /* Progress bar (fake via table) */
+    .progress-outer {
+      background-color: rgba(255,255,255,0.25);
+      border-radius: 3px;
+      height: 6px;
+      margin: 5px 0 3px;
+      width: 100%;
+    }
+    .progress-inner {
+      background-color: #ffffff;
+      border-radius: 3px;
+      height: 6px;
+    }
+    .progress-pct {
+      font-size: 7pt;
+      color: rgba(255,255,255,0.65);
+    }
+
+    /* ── Net Worth cards (2-col table) ──────────────────── */
+    .nw-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 10px 10px;
+    }
+    .nw-card {
+      border: 1.5px solid #D0D7E2;
+      border-radius: 6px;
+      padding: 12px 16px;
+      vertical-align: top;
+      width: 50%;
+    }
+    .nw-card-label {
+      font-size: 7.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: #888;
+      margin-bottom: 5px;
+    }
+    .nw-card-value {
+      font-size: 18pt;
+      font-weight: bold;
+      color: #1B4F8A;
+    }
+    .nw-card-liab .nw-card-value  { color: #C62828; }
+    .nw-card-grand {
+      border-color: #1B4F8A;
+      border-width: 2px;
+    }
+    .nw-card-grand .nw-card-value { font-size: 22pt; color: #1A1A2E; }
+
+    /* ── Cash flow summary table ────────────────────────── */
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10pt;
+    }
+    .summary-table th {
+      background-color: #F5F5F5;
+      padding: 7px 12px;
+      text-align: left;
+      font-size: 7.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #555;
+    }
+    .summary-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #F0F0F0;
+    }
+    .summary-table .amt { text-align: right; font-weight: bold; }
+    .summary-table .total-row td {
+      background-color: #E8EEF7;
+      font-weight: bold;
+      color: #1B4F8A;
+    }
+
+    /* ── Footer ─────────────────────────────────────────── */
+    .footer-bar {
+      background-color: #1B4F8A;
+      width: 100%;
+      padding: 10px 36px;
+      margin-top: 20px;
+    }
+    .footer-bar td {
+      color: rgba(255,255,255,0.85);
+      font-size: 8pt;
+      vertical-align: middle;
+    }
+    .footer-brand {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 9pt;
+    }
+    .footer-disclaimer {
+      font-size: 7pt;
+      color: rgba(255,255,255,0.6);
+      max-width: 360px;
+    }
+    .footer-right {
+      text-align: right;
+      font-size: 8pt;
+      color: rgba(255,255,255,0.8);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────── -->
+<table class="header-table" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width:55%;">
+      <div class="header-title">Simple Automated<br>Cash Flow System</div>
+      <div class="header-subtitle">SACS — Quarterly Financial Summary</div>
+    </td>
+    <td style="text-align:right;">
+      <div class="header-client">
+        {{ client.full_name }}{% if client.spouse_name %} &amp; {{ client.spouse_name }}{% endif %}
+      </div>
+      <div class="header-meta">{{ quarter_label }} &nbsp;·&nbsp; Generated {{ report.created_at.strftime('%B %d, %Y') }}</div>
+      <div><span class="confidential">CONFIDENTIAL</span></div>
+    </td>
+  </tr>
+</table>
+
+<!-- ── Body ────────────────────────────────────────────────── -->
+<div class="body-wrap">
+
+  <!-- Cash Flow Section -->
+  <div class="section-label">Cash Flow Overview</div>
+
+  <table class="flow-table" cellpadding="0" cellspacing="0">
+    <tr>
+
+      <!-- Inflow circle -->
+      <td class="circle-cell">
+        <table border="0" cellpadding="0" cellspacing="0" style="margin:auto;">
+          <tr><td>
+            <div class="circle-box circle-inflow">
+              <div class="circ-label circ-inflow-label">Inflow</div>
+              <div class="circ-amount circ-inflow-amt">{{ fmt(report.inflow) }}</div>
+              <div class="circ-sub" style="font-size:8pt;color:#555;">/mo</div>
+              <div class="circ-sub">Monthly<br>Take-Home Pay</div>
+            </div>
+          </td></tr>
+        </table>
+      </td>
+
+      <!-- Arrow: expenses -->
+      <td class="arrow-cell">
+        <div class="arrow-label-text">Expenses</div>
+        <div class="arrow-line-red"></div>
+        <div class="arrow-amount-text color-red">{{ fmt(report.outflow) }}</div>
+      </td>
+
+      <!-- Outflow circle -->
+      <td class="circle-cell">
+        <table border="0" cellpadding="0" cellspacing="0" style="margin:auto;">
+          <tr><td>
+            <div class="circle-box circle-outflow">
+              <div class="circ-label circ-outflow-label">Outflow</div>
+              <div class="circ-amount circ-outflow-amt">{{ fmt(report.outflow) }}</div>
+              <div class="circ-sub" style="font-size:8pt;color:#555;">/mo</div>
+              <div class="circ-sub">Monthly<br>Expenses</div>
+            </div>
+          </td></tr>
+        </table>
+      </td>
+
+      <!-- Arrow: excess -->
+      <td class="arrow-cell">
+        <div class="arrow-label-text">Excess</div>
+        <div class="arrow-line-blue"></div>
+        <div class="arrow-amount-text color-green">{{ fmt(report.excess) }}/mo</div>
+      </td>
+
+      <!-- Private Reserve box -->
+      <td class="reserve-cell">
+        <table border="0" cellpadding="0" cellspacing="0" style="margin:auto;">
+          <tr><td>
+            <div class="reserve-box">
+              <div class="res-label">Private Reserve</div>
+              <div class="res-balance">{{ fmt(report.private_reserve_balance) }}</div>
+              <div class="res-sub">Current Balance</div>
+              <div class="res-target">
+                Target: <b>{{ fmt(client.private_reserve_target) }}</b>
+              </div>
+              {% set pct = ((report.private_reserve_balance / client.private_reserve_target * 100)|int) if client.private_reserve_target > 0 else 0 %}
+              {% set pct = [pct, 100]|min %}
+              <div class="progress-outer">
+                <div class="progress-inner" style="width:{{ pct }}%;"></div>
+              </div>
+              <div class="progress-pct">{{ pct }}% funded</div>
+            </div>
+          </td></tr>
+        </table>
+      </td>
+
+    </tr>
+  </table>
+
+  <!-- Net Worth Breakdown -->
+  <div class="section-label" style="margin-top:20px;">Net Worth Breakdown — {{ quarter_label }}</div>
+
+  <table class="nw-table" cellpadding="0" cellspacing="0">
+    <tr>
+      <td class="nw-card">
+        <div class="nw-card-label">{{ client.full_name.split()[0] }} — Retirement</div>
+        <div class="nw-card-value">{{ fmt(report.c1_retirement_total) }}</div>
+      </td>
+      <td class="nw-card">
+        <div class="nw-card-label">
+          {% if client.spouse_name %}{{ client.spouse_name.split()[0] }}{% else %}Client 2{% endif %} — Retirement
+        </div>
+        <div class="nw-card-value">{{ fmt(report.c2_retirement_total) }}</div>
+      </td>
+    </tr>
+    <tr>
+      <td class="nw-card">
+        <div class="nw-card-label">Non-Retirement Investments</div>
+        <div class="nw-card-value">{{ fmt(report.non_retirement_total) }}</div>
+      </td>
+      <td class="nw-card">
+        <div class="nw-card-label">Trust Assets</div>
+        <div class="nw-card-value">{{ fmt(report.trust_value) }}</div>
+      </td>
+    </tr>
+    <tr>
+      <td class="nw-card nw-card-grand">
+        <div class="nw-card-label">Grand Total Net Worth</div>
+        <div class="nw-card-value">{{ fmt(report.grand_total_net_worth) }}</div>
+      </td>
+      <td class="nw-card nw-card-liab">
+        <div class="nw-card-label">Liabilities (Reference Only — Not Subtracted)</div>
+        <div class="nw-card-value">{{ fmt(report.liabilities_total) }}</div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Cash Flow Summary -->
+  <div class="section-label">Cash Flow Summary</div>
+
+  <table class="summary-table" cellpadding="0" cellspacing="0">
+    <thead>
+      <tr>
+        <th style="width:50%;">Category</th>
+        <th style="width:20%;text-align:right;">Monthly Amount</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Monthly Take-Home Pay (Inflow)</td>
+        <td class="amt" style="color:#2E7D32;">{{ fmt(report.inflow) }}</td>
+        <td>After-tax household income</td>
+      </tr>
+      <tr>
+        <td>Monthly Expenses (Outflow)</td>
+        <td class="amt" style="color:#C62828;">{{ fmt(report.outflow) }}</td>
+        <td>Budgeted monthly expenses</td>
+      </tr>
+      <tr class="total-row">
+        <td>Monthly Excess</td>
+        <td class="amt">{{ fmt(report.excess) }}</td>
+        <td>Available for savings &amp; reserve</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="font-size:7.5pt;color:#999;margin-top:10px;line-height:1.5;">
+    <b>Disclosure:</b> Liabilities totaling {{ fmt(report.liabilities_total) }} are tracked for reference and intentionally
+    excluded from Net Worth per client preference. This report is for informational purposes only and does not constitute
+    investment advice.
+  </p>
+
+</div>
+
+<!-- ── Footer ──────────────────────────────────────────────── -->
+<table class="footer-bar" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="width:33%;">
+      <div class="footer-brand">Windbrook Solutions</div>
+      <div style="font-size:7pt;color:rgba(255,255,255,0.55);">AW Client Report Portal</div>
+    </td>
+    <td style="width:34%;text-align:center;">
+      <div class="footer-disclaimer">
+        Confidential — for named client only. Unauthorized distribution prohibited.
+      </div>
+    </td>
+    <td class="footer-right" style="width:33%;">
+      {{ quarter_label }}<br>
+      <span style="color:rgba(255,255,255,0.55);">{{ report.created_at.strftime('%m/%d/%Y') }}</span>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

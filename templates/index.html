@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280">
+  <title>AW Client Report Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="/" class="topbar-logo">AW</a>
+    <a href="/" class="topbar-title">AW Client Report Portal</a>
+  </div>
+  <div class="topbar-user">
+    <span style="color:rgba(255,255,255,0.75);">Windbrook Solutions</span>
+    <div class="topbar-divider"></div>
+    <span>Sarah Mitchell</span>
+    <div class="topbar-user-avatar">SM</div>
+  </div>
+</nav>
+
+<div class="page">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Clients</h1>
+      <div class="page-subtitle">
+        {{ client_data|length }} active household{{ 's' if client_data|length != 1 else '' }}
+      </div>
+    </div>
+    <a href="/clients/new" class="btn btn-primary">
+      <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+      Add New Client
+    </a>
+  </div>
+
+  <div class="table-card">
+    <table class="data">
+      <thead>
+        <tr>
+          <th style="width:32%;">Client Name</th>
+          <th style="width:18%;">Spouse</th>
+          <th style="width:14%;">Last Report</th>
+          <th style="width:14%;">Quarter</th>
+          <th style="width:22%;text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in client_data %}
+        {% set c = item.client %}
+        {% set lr = item.last_report %}
+        <tr>
+          <td class="cell-name">{{ c.full_name }}</td>
+          <td>
+            {% if c.spouse_name %}{{ c.spouse_name.split()[0] }}
+            {% else %}<span class="dash">—</span>{% endif %}
+          </td>
+          <td>
+            {% if lr %}
+              <span class="quarter-pill">Q{{ lr.quarter }} {{ lr.year }}</span>
+            {% else %}<span class="dash">—</span>{% endif %}
+          </td>
+          <td style="color:var(--gray-600);">
+            {% if lr %}{{ lr.created_at.strftime('%b %d, %Y') }}
+            {% else %}<span class="dash">—</span>{% endif %}
+          </td>
+          <td class="cell-actions">
+            <a href="/clients/{{ c.id }}/report" class="btn btn-primary btn-sm">
+              <svg class="ico-sm" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6L9 2zM9 2v4h4M5.5 9h5M5.5 11.5h5"/></svg>
+              Generate Report
+            </a>
+            {% if lr %}
+            <a href="/clients/{{ c.id }}/sacs-pdf/latest" class="btn btn-outline btn-sm">
+              <svg class="ico-sm" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0l-3-3m3 3l3-3M2.5 12v1.5a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V12"/></svg>
+              SACS PDF
+            </a>
+            {% endif %}
+            <a href="/clients/{{ c.id }}/edit" class="btn btn-outline btn-sm">
+              <svg class="ico-sm" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8s2.5-5 6.5-5 6.5 5 6.5 5-2.5 5-6.5 5S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>
+              View
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" style="text-align:center;padding:48px 20px;color:var(--gray-500);">
+            No clients yet.
+            <a href="/clients/new" style="color:var(--navy);font-weight:500;">Add your first client →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-footer">
+    <span>Showing {{ client_data|length }} of {{ client_data|length }} clients</span>
+    <span style="display:flex;align-items:center;gap:6px;">
+      <svg class="ico-sm" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="7" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+      All data encrypted at rest
+    </span>
+  </div>
+
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

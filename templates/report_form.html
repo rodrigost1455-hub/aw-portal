@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280">
+  <title>Generate Report — {{ client.full_name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="/" class="topbar-logo">AW</a>
+    <a href="/" class="topbar-title">AW Client Report Portal</a>
+  </div>
+  <div class="topbar-user">
+    <span style="color:rgba(255,255,255,0.75);">Windbrook Solutions</span>
+    <div class="topbar-divider"></div>
+    <span>Sarah Mitchell</span>
+    <div class="topbar-user-avatar">SM</div>
+  </div>
+</nav>
+
+<div class="page page-wide">
+
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+    <div class="crumbs">
+      <a href="/">Clients</a>
+      <span class="sep">›</span>
+      <span>{{ client.full_name.split()[0] }}{{ ' & ' + client.spouse_name.split()[0] if client.spouse_name else '' }}</span>
+      <span class="sep">›</span>
+      <span id="crumb-quarter">Q{{ current_quarter }} {{ current_year }}</span> Report
+    </div>
+    <div class="confidential">Confidential</div>
+  </div>
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Generate Report — {{ client.full_name }}{% if client.spouse_name %} &amp; {{ client.spouse_name }}{% endif %}</h1>
+      <div class="page-subtitle">SACS cash flow · account balances · auto-aggregated for PDF export</div>
+    </div>
+  </div>
+
+  <!-- Quarter selector -->
+  <div class="quarter-bar">
+    <div class="quarter-bar-label">Reporting Period</div>
+    <div class="quarter-tabs">
+      {% for q in [1,2,3,4] %}
+      <button type="button" class="quarter-tab {% if q == current_quarter %}active{% endif %}"
+        data-q="{{ q }}" onclick="selectQuarter(this)">Q{{ q }}</button>
+      {% endfor %}
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="quarter-bar-label">Year</span>
+      <input type="number" class="input year-input" id="year-input"
+        value="{{ current_year }}" min="2000" max="2099"
+        onchange="document.getElementById('year-hidden').value=this.value">
+    </div>
+    <div style="margin-left:auto;font-size:12px;color:var(--gray-500);display:flex;align-items:center;gap:6px;">
+      <svg class="ico-sm" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2h8l2 2v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M5 2v4h5V2M5 10h6"/></svg>
+      Live calculations
+    </div>
+  </div>
+
+  <form id="report-form" action="/clients/{{ client.id }}/report" method="POST">
+    <input type="hidden" name="quarter" id="quarter-hidden" value="{{ current_quarter }}">
+    <input type="hidden" name="year"    id="year-hidden"    value="{{ current_year }}">
+    <input type="hidden" name="form_action" id="form-action" value="save">
+
+    <div class="two-col-report">
+
+      <!-- ── LEFT: Data Entry ────────────────────────────── -->
+      <div>
+        <div class="card">
+
+          <!-- SACS Cash Flow -->
+          <div class="form-section">
+            <h2 class="section-header">SACS — Cash Flow</h2>
+
+            <!-- Inflow -->
+            <div class="report-row">
+              <div class="report-row-label">
+                <div class="main">Inflow</div>
+                <div class="hint">Monthly take-home pay (from client profile)</div>
+              </div>
+              <div class="input-with-prefix">
+                <span class="prefix">$</span>
+                <input type="number" class="input readonly value-green" id="inflow"
+                  name="inflow" readonly value="{{ client.monthly_salary|int }}">
+              </div>
+            </div>
+
+            <!-- Outflow -->
+            <div class="report-row">
+              <div class="report-row-label">
+                <div class="main">Outflow</div>
+                <div class="hint">Monthly expense budget (from client profile)</div>
+              </div>
+              <div class="input-with-prefix">
+                <span class="prefix">$</span>
+                <input type="number" class="input readonly value-red" id="outflow"
+                  name="outflow" readonly value="{{ client.monthly_expense_budget|int }}">
+              </div>
+            </div>
+
+            <!-- Excess (calculated) -->
+            <div class="report-row">
+              <div class="report-row-label">
+                <div class="main">Excess</div>
+                <div class="hint">Excess = Inflow − Outflow</div>
+              </div>
+              <div class="input-with-prefix">
+                <span class="prefix">$</span>
+                <input type="text" class="input readonly value-blue" id="excess_display"
+                  readonly value="{{ (client.monthly_salary - client.monthly_expense_budget)|int | abs }}">
+              </div>
+            </div>
+
+            <!-- Private Reserve Balance -->
+            <div class="report-row">
+              <div class="report-row-label">
+                <div class="main">
+                  Private Reserve Balance
+                  <span class="required-tag">Required</span>
+                </div>
+                {% if last_report %}
+                <div class="hint">Last quarter: ${{ "{:,.0f}".format(last_report.private_reserve_balance) }}</div>
+                {% endif %}
+              </div>
+              <div class="input-with-prefix">
+                <span class="prefix">$</span>
+                <input type="number" class="input" id="private_reserve_balance"
+                  name="private_reserve_balance" min="0" step="100" placeholder="0"
+                  value="{{ last_report.private_reserve_balance|int if last_report else '' }}">
+              </div>
+            </div>
+            <input type="hidden" id="pr_target_val" data-target="{{ client.private_reserve_target }}">
+          </div>
+
+          <!-- Account Balances -->
+          <div class="form-section">
+            <h2 class="section-header">Account Balances</h2>
+
+            {% set ret_accounts  = accounts | selectattr("is_retirement") | list %}
+            {% set nonret_accounts = accounts | rejectattr("is_retirement") | rejectattr("is_trust") | rejectattr("is_liability") | list %}
+            {% set trust_accounts  = accounts | selectattr("is_trust") | list %}
+            {% set liab_accounts   = accounts | selectattr("is_liability") | list %}
+
+            {% macro acct_row(acct, section_label) %}
+            <div class="report-row">
+              <div class="report-row-label">
+                <div class="main">
+                  {% if acct.owner == 'client1' %}{{ client.full_name.split()[0] }}
+                  {% elif acct.owner == 'client2' %}{{ client.spouse_name.split()[0] if client.spouse_name else 'Client 2' }}
+                  {% else %}Joint{% endif %}
+                  — {{ acct.type }}
+                  {% if acct.account_last4 %}
+                    <span class="tag-rate">···{{ acct.account_last4 }}</span>
+                  {% endif %}
+                  {% if acct.is_liability and acct.interest_rate %}
+                    <span class="tag-rate">{{ acct.interest_rate }}% APR</span>
+                  {% endif %}
+                </div>
+                {% if acct.id in last_balances %}
+                <div class="hint">Last: ${{ "{:,.0f}".format(last_balances[acct.id]) }}</div>
+                {% endif %}
+              </div>
+              <div class="input-with-prefix">
+                <span class="prefix">$</span>
+                <input type="number" class="input balance-input" min="0" step="100"
+                  name="balance_{{ acct.id }}"
+                  id="bal_{{ acct.id }}"
+                  placeholder="0"
+                  data-owner="{{ acct.owner }}"
+                  data-retirement="{{ 'true' if acct.is_retirement else 'false' }}"
+                  data-trust="{{ 'true' if acct.is_trust else 'false' }}"
+                  data-liability="{{ 'true' if acct.is_liability else 'false' }}"
+                  data-required="true"
+                  value="{{ last_balances[acct.id]|int if acct.id in last_balances else '' }}">
+              </div>
+            </div>
+            {% endmacro %}
+
+            {% if ret_accounts %}
+            <div style="font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.08em;padding:8px 0 4px;border-top:1px solid var(--gray-100);">Retirement Accounts</div>
+            {% for acct in ret_accounts %}{{ acct_row(acct, 'retirement') }}{% endfor %}
+            {% endif %}
+
+            {% if nonret_accounts %}
+            <div style="font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.08em;padding:8px 0 4px;border-top:1px solid var(--gray-100);">Non-Retirement</div>
+            {% for acct in nonret_accounts %}{{ acct_row(acct, 'non-ret') }}{% endfor %}
+            {% endif %}
+
+            {% if trust_accounts %}
+            <div style="font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.08em;padding:8px 0 4px;border-top:1px solid var(--gray-100);">Trust</div>
+            {% for acct in trust_accounts %}{{ acct_row(acct, 'trust') }}{% endfor %}
+            {% endif %}
+
+            {% if liab_accounts %}
+            <div style="font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.08em;padding:8px 0 4px;border-top:1px solid var(--gray-100);">Liabilities</div>
+            {% for acct in liab_accounts %}{{ acct_row(acct, 'liability') }}{% endfor %}
+            {% endif %}
+
+            {% if not accounts %}
+            <div class="account-empty">
+              No accounts on file.
+              <a href="/clients/{{ client.id }}/edit" style="color:var(--navy);">Edit client profile</a> to add accounts.
+            </div>
+            {% endif %}
+          </div>
+
+        </div>
+      </div><!-- /LEFT -->
+
+      <!-- ── RIGHT: Live Totals ──────────────────────────── -->
+      <div class="totals-panel">
+
+        <div class="totals-header">
+          <h3>Calculated Totals</h3>
+          <div class="sub">
+            <span class="live-dot pulse"></span> Updates automatically
+          </div>
+        </div>
+
+        <!-- SACS card -->
+        <div class="summary-card">
+          <h4 class="summary-card-title">
+            SACS Summary
+            <span class="tag" id="sacs-quarter-tag">Q{{ current_quarter }} {{ current_year }}</span>
+          </h4>
+          <div class="summary-row">
+            <span class="label">Inflow</span>
+            <span class="value value-green" id="p-inflow">${{ "{:,.0f}".format(client.monthly_salary) }}<span style="font-weight:400;color:var(--gray-500);font-size:11px;">/mo</span></span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Outflow</span>
+            <span class="value value-red" id="p-outflow">${{ "{:,.0f}".format(client.monthly_expense_budget) }}<span style="font-weight:400;color:var(--gray-500);font-size:11px;">/mo</span></span>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-row" id="p-excess-row">
+            <span class="label" style="font-weight:600;color:var(--gray-900);">Excess</span>
+            <span class="value value-blue" style="font-size:15px;" id="p-excess">${{ "{:,.0f}".format((client.monthly_salary - client.monthly_expense_budget)|abs) }}<span style="font-weight:400;color:var(--gray-500);font-size:11px;">/mo</span></span>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-row">
+            <span class="label">Private Reserve</span>
+            <span class="value" id="p-pr">{% if last_report %}${{ "{:,.0f}".format(last_report.private_reserve_balance) }}{% else %}<span style="color:var(--gray-400);font-weight:400;font-style:italic;">not entered</span>{% endif %}</span>
+          </div>
+          <div class="summary-row">
+            <span class="label" style="font-size:11.5px;color:var(--gray-500);">Target (6 × outflow)</span>
+            <span class="value" style="font-size:12px;color:var(--gray-600);" id="p-pr-target">${{ "{:,.0f}".format(client.private_reserve_target) }}</span>
+          </div>
+        </div>
+
+        <!-- TCC / Net Worth card -->
+        <div class="summary-card navy-bordered">
+          <h4 class="summary-card-title">
+            Net Worth Summary
+            <span class="tag" style="color:var(--navy);background:var(--navy-50);border:1px solid var(--navy-100);">Net Worth</span>
+          </h4>
+          <div class="summary-row">
+            <span class="label">{{ client.full_name.split()[0] }} — Retirement</span>
+            <span class="value" id="p-c1-ret">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">{% if client.spouse_name %}{{ client.spouse_name.split()[0] }}{% else %}Client 2{% endif %} — Retirement</span>
+            <span class="value" id="p-c2-ret">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Non-Retirement Total</span>
+            <span class="value" id="p-non-ret">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Trust Value</span>
+            <span class="value" id="p-trust">—</span>
+          </div>
+          <div class="summary-divider heavy"></div>
+          <div class="grand-total">
+            <span class="label">Grand Total Net Worth</span>
+            <span class="value" id="p-grand">—</span>
+          </div>
+          <div class="summary-divider heavy"></div>
+          <div class="liability-row">
+            <span class="label">Liabilities</span>
+            <span class="value" id="p-liab">—</span>
+          </div>
+          <div class="liability-note">Not subtracted from net worth.</div>
+        </div>
+
+        <!-- Previous report reference -->
+        {% if last_report %}
+        <div style="padding:12px 14px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius);font-size:12px;color:var(--gray-500);">
+          Previous: <strong style="color:var(--gray-700);">Q{{ last_report.quarter }} {{ last_report.year }}</strong>
+          — Net Worth <strong style="color:var(--navy);">${{ "{:,.0f}".format(last_report.grand_total_net_worth) }}</strong>
+        </div>
+        {% endif %}
+
+        <div id="ready-msg" class="action-bar-info" style="font-size:12px;padding:10px 14px;background:var(--green-bg);border:1px solid #C5DCC7;border-radius:var(--radius);">
+          <svg class="ico-sm" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="7" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+          <span style="color:var(--green);font-weight:500;">Ready to generate PDF</span>
+        </div>
+
+      </div><!-- /RIGHT -->
+
+    </div><!-- /two-col-report -->
+  </form>
+
+</div><!-- /page -->
+
+<!-- Sticky action bar -->
+<div class="action-bar">
+  <div class="action-bar-info">
+    <svg class="ico-sm" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="7" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+    <span id="action-status" style="color:var(--green);font-weight:500;">All fields complete — ready to generate</span>
+  </div>
+  <div style="display:flex;gap:10px;">
+    <button type="button" id="btn-save" class="btn btn-outline">
+      <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2h8l2 2v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M5 2v4h5V2M5 10h6"/></svg>
+      Save Progress
+    </button>
+    <button type="button" id="btn-pdf" class="btn btn-primary">
+      <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0l-3-3m3 3l3-3M2.5 12v1.5a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V12"/></svg>
+      Generate SACS PDF
+    </button>
+  </div>
+</div>
+
+<script>
+function selectQuarter(btn) {
+  document.querySelectorAll('.quarter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const q = btn.dataset.q;
+  document.getElementById('quarter-hidden').value = q;
+  const yr = document.getElementById('year-input').value;
+  document.getElementById('crumb-quarter').textContent = 'Q' + q + ' ' + yr;
+  const tag = document.getElementById('sacs-quarter-tag');
+  if (tag) tag.textContent = 'Q' + q + ' ' + yr;
+}
+document.getElementById('year-input')?.addEventListener('change', function() {
+  document.getElementById('year-hidden').value = this.value;
+  const q = document.getElementById('quarter-hidden').value;
+  document.getElementById('crumb-quarter').textContent = 'Q' + q + ' ' + this.value;
+  const tag = document.getElementById('sacs-quarter-tag');
+  if (tag) tag.textContent = 'Q' + q + ' ' + this.value;
+});
+</script>
+<script src="/static/app.js"></script>
+</body>
+</html>
